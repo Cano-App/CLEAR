@@ -1,0 +1,4 @@
+# The readable content. Only the encrypted vault.json is ever committed.
+content.json
+*.private.json
+.DS_Store

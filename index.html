@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#07212b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CLEAR">
+<title>CLEAR</title>
+<style>
+  :root {
+    --ink: #07212b;
+    --glass: rgba(7, 33, 43, .56);
+    --glass-strong: rgba(7, 33, 43, .78);
+    --line: rgba(243, 233, 210, .16);
+    --sand: #f3e9d2;
+    --mist: rgba(243, 233, 210, .7);
+    --amber: #f5b841;
+    --flare: #ff6b4a;
+    --radius-panel: 28px;
+    --radius-row: 16px;
+    --pad: clamp(18px, 5vw, 44px);
+    --measure: 1080px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--ink);
+    color: var(--sand);
+    font-family: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    font-size: 17px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  [hidden] { display: none !important; }
+  button, input { font: inherit; color: inherit; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+
+  /* The picture that stays put. A fixed layer works on iPhone,
+     where background-attachment: fixed does not. */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    height: 100lvh;
+    z-index: -1;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 60% at 78% 38%, rgba(245, 184, 65, .85) 0%, rgba(255, 107, 74, .5) 28%, transparent 60%),
+      linear-gradient(180deg, #123f55 0%, #1f6f7d 30%, #e0915a 52%, #0c3a46 54%, #07212b 100%);
+  }
+  .backdrop img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .backdrop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(7, 33, 43, .34) 0%, rgba(7, 33, 43, .08) 34%, rgba(7, 33, 43, .5) 100%);
+  }
+
+  .wordmark {
+    margin: 0;
+    font-size: clamp(5rem, 27vw, 15rem);
+    font-weight: 800;
+    line-height: .8;
+    letter-spacing: -.045em;
+    margin-left: -.05em;
+    color: var(--sand);
+    text-shadow: 0 2px 40px rgba(7, 33, 43, .35);
+  }
+
+  /* ---------- Lock screen ---------- */
+  .lock {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 22px;
+    padding: var(--pad);
+    padding-bottom: calc(var(--pad) + env(safe-area-inset-bottom));
+    max-width: var(--measure);
+    margin: 0 auto;
+  }
+  .lock p { margin: 0; color: var(--sand); font-size: 1.15rem; max-width: 26ch; }
+  .lock form {
+    display: flex;
+    gap: 10px;
+    max-width: 460px;
+    padding: 8px;
+    border-radius: 999px;
+    background: var(--glass-strong);
+    border: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    backdrop-filter: blur(22px) saturate(140%);
+  }
+  .lock input {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: 0;
+    padding: 12px 16px;
+    font-size: 17px;
+    border-radius: 999px;
+  }
+  .lock input::placeholder, .search input::placeholder { color: var(--mist); }
+  .lock button, .action-primary {
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 22px;
+    background: var(--amber);
+    color: var(--ink);
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .lock button[disabled] { opacity: .6; cursor: progress; }
+  .lock .status { min-height: 1.5em; font-size: 1rem; max-width: 40ch; color: var(--sand); }
+
+  /* ---------- Hub ---------- */
+  .hero {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: var(--pad);
+    padding-bottom: clamp(28px, 7vh, 72px);
+    max-width: var(--measure);
+    margin: 0 auto;
+  }
+  .hero .place { margin: 18px 0 0; font-size: 1.25rem; font-weight: 600; }
+  .hero .updated { margin: 2px 0 0; color: var(--mist); font-size: .95rem; }
+
+  .bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: calc(10px + env(safe-area-inset-top)) var(--pad) 10px;
+    background: rgba(7, 33, 43, .93);
+    border-block: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
+  }
+  .bar-inner { max-width: var(--measure); margin: 0 auto; display: grid; gap: 10px; }
+  .search { position: relative; }
+  .search svg { position: absolute; left: 16px; top: 50%; translate: 0 -50%; opacity: .7; pointer-events: none; }
+  .search input {
+    width: 100%;
+    padding: 13px 16px 13px 46px;
+    font-size: 17px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(243, 233, 210, .1);
+  }
+  .jump { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--pad) * -1); padding-inline: var(--pad); }
+  .jump::-webkit-scrollbar { display: none; }
+  .jump a {
+    flex: none;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    text-decoration: none;
+    font-size: .95rem;
+    font-weight: 600;
+  }
+
+  main { max-width: var(--measure); margin: 0 auto; padding: 0 var(--pad); }
+
+  .panel {
+    margin-block: 13vh;
+    padding: clamp(20px, 4.5vw, 40px);
+    border-radius: var(--radius-panel);
+    background: var(--glass);
+    border: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(26px) saturate(150%);
+    backdrop-filter: blur(26px) saturate(150%);
+    scroll-margin-top: 150px;
+  }
+  .panel:first-child { margin-top: 5vh; }
+  .panel h2 {
+    margin: 0;
+    font-size: clamp(1.7rem, 5.4vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: 1.05;
+  }
+  .panel .blurb { margin: 8px 0 22px; color: var(--mist); max-width: 46ch; }
+
+  .items { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .items.contacts { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+  .items.services, .items.documents { grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); }
+
+  .item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 16px 14px 16px 18px;
+    border-radius: var(--radius-row);
+    background: rgba(243, 233, 210, .08);
+    border: 1px solid transparent;
+  }
+  .item.urgent { border-color: rgba(255, 107, 74, .7); background: rgba(255, 107, 74, .14); }
+  .item h3 { margin: 0; font-size: 1.1rem; font-weight: 700; line-height: 1.2; }
+  .item .note { margin: 3px 0 0; color: var(--mist); font-size: .95rem; }
+  .item .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .item .actions:empty { display: none; }
+  .action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(243, 233, 210, .1);
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 1rem;
+  }
+  .action.action-primary { border-color: transparent; background: var(--amber); color: var(--ink); }
+  .item.urgent .action.action-primary { background: var(--flare); color: #fff; }
+  .pending { color: var(--mist); font-size: .9rem; font-style: italic; }
+
+  .pin {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+    opacity: .55;
+  }
+  .pin[aria-pressed="true"] { opacity: 1; color: var(--amber); }
+  .pin[aria-pressed="true"] svg { fill: currentColor; }
+
+  .shortcuts { margin: 5vh 0 0; }
+  .shortcuts h2 { font-size: 1rem; font-weight: 700; margin: 0 0 10px; }
+  .shortcuts ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .shortcuts a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: var(--glass-strong);
+    border: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .shortcuts + .panel { margin-top: 5vh; }
+
+  .empty { margin: 12vh 0; padding: 24px; border-radius: var(--radius-panel); background: var(--glass-strong); }
+  .empty p { margin: 0; }
+
+  footer {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 0 var(--pad) calc(40px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--sand);
+    font-size: .95rem;
+  }
+  footer button {
+    border: 1px solid var(--line);
+    background: var(--glass-strong);
+    border-radius: 999px;
+    padding: 10px 18px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .reveal { animation: reveal .7s cubic-bezier(.2, .7, .2, 1) both; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(18px); } }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="backdrop" aria-hidden="true">
+  <img src="assets/background.jpg" alt="" onerror="this.remove()">
+</div>
+
+<section class="lock" id="lock">
+  <h1 class="wordmark">CLEAR</h1>
+  <p>Resident hub. Enter the passcode to open it.</p>
+  <form id="lock-form" autocomplete="off">
+    <input id="passcode" type="password" placeholder="Passcode" aria-label="Passcode" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+    <button type="submit" id="unlock">Unlock</button>
+  </form>
+  <div class="status" id="lock-status" role="status" aria-live="polite"></div>
+</section>
+
+<div id="hub" hidden>
+  <header class="hero">
+    <h1 class="wordmark">CLEAR</h1>
+    <p class="place" id="place"></p>
+    <p class="updated" id="updated"></p>
+  </header>
+
+  <div class="bar">
+    <div class="bar-inner">
+      <label class="search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+        <input id="search" type="search" placeholder="Search everything" aria-label="Search everything" autocomplete="off">
+      </label>
+      <nav class="jump" id="jump" aria-label="Sections"></nav>
+    </div>
+  </div>
+
+  <main id="main">
+    <section class="shortcuts" id="shortcuts" hidden>
+      <h2>Your shortcuts</h2>
+      <ul id="shortcut-list"></ul>
+    </section>
+    <div id="sections"></div>
+    <div class="empty" id="empty" hidden><p>Nothing matches that search. Try a shorter word.</p></div>
+  </main>
+
+  <footer>
+    <span>Tap a star to keep an item in your shortcuts.</span>
+    <button type="button" id="relock">Lock this device</button>
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const STORE_KEY = 'clear.unlock';
+  const PINS_KEY = 'clear.pins';
+
+  const ICONS = {
+    phone: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+    chat: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>',
+    open: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+    star: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.2 6-5.5-3-5.5 3 1.2-6L3.200 9.400l6.100-.8z"/></svg>'
+  };
+
+  // Browser storage can be unavailable (private mode); the hub still works without it.
+  const store = {
+    get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
+    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ } },
+    remove(key) { try { localStorage.removeItem(key); } catch { /* ignore */ } }
+  };
+
+  const toBytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const toB64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+
+  async function keyFromPasscode(passcode, vault) {
+    const base = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(passcode.trim()), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: toBytes(vault.salt), iterations: vault.iterations, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, true, ['decrypt']);
+  }
+
+  async function openVault(key, vault) {
+    const plain = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: toBytes(vault.iv) }, key, toBytes(vault.data));
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+
+  /* ---------- Rendering ---------- */
+
+  const el = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
+  };
+  const webUrl = (url) => (/^https?:\/\//i.test(url || '') ? url : null);
+  const dial = (num) => (num || '').replace(/[^\d+]/g, '');
+
+  function actionLink(href, label, icon, primary) {
+    const a = el('a', 'action' + (primary ? ' action-primary' : ''));
+    a.href = href;
+    a.innerHTML = ICONS[icon];
+    a.append(label);
+    if (href.startsWith('http')) { a.target = '_blank'; a.rel = 'noopener'; }
+    return a;
+  }
+
+  function itemActions(item) {
+    const out = [];
+    const phone = dial(item.phone);
+    const wa = dial(item.whatsapp).replace('+', '');
+    const url = webUrl(item.url);
+    if (phone) out.push(actionLink('tel:' + phone, 'Call ' + item.phone, 'phone', true));
+    if (wa) out.push(actionLink('https://wa.me/' + wa, 'WhatsApp', 'chat', !phone));
+    if (url) out.push(actionLink(url, item.linkLabel || 'Open', 'open', !phone && !wa));
+    return out;
+  }
+
+  let pins = new Set(store.get(PINS_KEY) || []);
+  let content = null;
+
+  function renderShortcuts() {
+    const list = $('shortcut-list');
+    list.replaceChildren();
+    for (const section of content.sections) {
+      for (const item of section.items) {
+        const id = section.id + '|' + item.title;
+        if (!pins.has(id)) continue;
+        const first = itemActions(item)[0];
+        const a = el('a');
+        a.href = first ? first.href : '#' + section.id;
+        if (first && first.target) { a.target = first.target; a.rel = first.rel; }
+        a.textContent = item.title;
+        const li = el('li');
+        li.append(a);
+        list.append(li);
+      }
+    }
+    $('shortcuts').hidden = !list.children.length;
+  }
+
+  function render() {
+    $('place').textContent = content.place || '';
+    $('updated').textContent = content.updated ? 'Updated ' + content.updated : '';
+
+    const jump = $('jump');
+    const sections = $('sections');
+    jump.replaceChildren();
+    sections.replaceChildren();
+
+    for (const section of content.sections) {
+      const link = el('a', null, section.title);
+      link.href = '#' + section.id;
+      jump.append(link);
+
+      const panel = el('section', 'panel');
+      panel.id = section.id;
+      panel.append(el('h2', null, section.title));
+      if (section.blurb) panel.append(el('p', 'blurb', section.blurb));
+
+      const list = el('ul', 'items ' + (section.kind || 'services'));
+      for (const item of section.items) {
+        const id = section.id + '|' + item.title;
+        const li = el('li', 'item' + (item.urgent ? ' urgent' : ''));
+        li.dataset.search = [item.title, item.note, item.phone, section.title].join(' ').toLowerCase();
+
+        const text = el('div');
+        text.append(el('h3', null, item.title));
+        if (item.note) text.append(el('p', 'note', item.note));
+
+        const pin = el('button', 'pin');
+        pin.type = 'button';
+        pin.innerHTML = ICONS.star;
+        pin.setAttribute('aria-label', 'Keep ' + item.title + ' in your shortcuts');
+        pin.setAttribute('aria-pressed', String(pins.has(id)));
+        pin.addEventListener('click', () => {
+          pins.has(id) ? pins.delete(id) : pins.add(id);
+          pin.setAttribute('aria-pressed', String(pins.has(id)));
+          store.set(PINS_KEY, [...pins]);
+          renderShortcuts();
+        });
+
+        const actions = el('div', 'actions');
+        const links = itemActions(item);
+        if (links.length) actions.append(...links);
+        else actions.append(el('span', 'pending', 'Details still to add'));
+
+        li.append(text, pin, actions);
+        list.append(li);
+      }
+      panel.append(list);
+      sections.append(panel);
+    }
+    renderShortcuts();
+  }
+
+  function filter(query) {
+    const q = query.trim().toLowerCase();
+    let any = false;
+    for (const panel of document.querySelectorAll('.panel')) {
+      let shown = 0;
+      for (const li of panel.querySelectorAll('.item')) {
+        const match = !q || li.dataset.search.includes(q);
+        li.hidden = !match;
+        if (match) shown++;
+      }
+      panel.hidden = !shown;
+      any = any || shown > 0;
+    }
+    $('empty').hidden = any;
+  }
+
+  /* ---------- Lock and unlock ---------- */
+
+  function showHub(data, animate) {
+    content = data;
+    render();
+    $('lock').hidden = true;
+    $('hub').hidden = false;
+    if (animate) {
+      $('hub').classList.add('reveal');
+      window.scrollTo(0, 0);
+    }
+  }
+
+  async function start() {
+    const status = $('lock-status');
+    const button = $('unlock');
+
+    if (!window.crypto || !crypto.subtle) {
+      status.textContent = 'This page has to be opened over https to unlock.';
+      button.disabled = true;
+      return;
+    }
+
+    let vault;
+    try {
+      const res = await fetch('vault.json', { cache: 'no-cache' });
+      if (!res.ok) throw new Error(res.status);
+      vault = await res.json();
+    } catch {
+      status.textContent = 'The hub could not load. Check your connection and reload the page.';
+      button.disabled = true;
+      return;
+    }
+
+    // Already unlocked on this device? The saved key only fits the current passcode.
+    const saved = store.get(STORE_KEY);
+    if (saved && saved.salt === vault.salt) {
+      try {
+        const key = await crypto.subtle.importKey('raw', toBytes(saved.key), 'AES-GCM', false, ['decrypt']);
+        showHub(await openVault(key, vault), false);
+        return;
+      } catch { store.remove(STORE_KEY); }
+    }
+
+    $('lock-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      button.disabled = true;
+      status.textContent = 'Unlocking…';
+      try {
+        const key = await keyFromPasscode($('passcode').value, vault);
+        const data = await openVault(key, vault);
+        store.set(STORE_KEY, { salt: vault.salt, key: toB64(await crypto.subtle.exportKey('raw', key)) });
+        status.textContent = '';
+        showHub(data, true);
+      } catch {
+        status.textContent = 'That passcode did not work. Check it and try again.';
+        $('passcode').select();
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
+  $('search').addEventListener('input', (event) => filter(event.target.value));
+  $('relock').addEventListener('click', () => {
+    store.remove(STORE_KEY);
+    location.reload();
+  });
+
+  start();
+})();
+</script>
+</body>
+</html>
