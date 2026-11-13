@@ -244,6 +244,124 @@
   .pin[aria-pressed="true"] { opacity: 1; color: var(--amber); }
   .pin[aria-pressed="true"] svg { fill: currentColor; }
 
+  /* ---------- Bubble view ---------- */
+  .bar-row { display: flex; gap: 10px; align-items: center; }
+  .bar-row .search { flex: 1; min-width: 0; }
+  .view-toggle {
+    flex: none;
+    border: 1px solid var(--line);
+    background: rgba(243, 233, 210, .1);
+    border-radius: 999px;
+    padding: 13px 18px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .cluster { margin-block: 9vh; scroll-margin-top: 150px; }
+  .cluster:first-child, .shortcuts + #sections .cluster:first-child { margin-top: 5vh; }
+  .cluster h2 {
+    margin: 0;
+    font-size: clamp(1.7rem, 5.4vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -.025em;
+    line-height: 1.05;
+    text-shadow: 0 1px 24px rgba(7, 33, 43, .7);
+  }
+  .cluster .blurb { margin: 8px 0 22px; max-width: 46ch; text-shadow: 0 1px 16px rgba(7, 33, 43, .8); }
+
+  /* Rows of four and three, each row nudged half a step: a honeycomb. */
+  .honeycomb {
+    --cols: 4;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(calc(var(--cols) * 2), 1fr);
+    row-gap: 4px;
+  }
+  .honeycomb li { grid-column: span 2; min-width: 0; display: flex; justify-content: center; }
+  .honeycomb li:nth-child(7n+5) { grid-column: 2 / span 2; }
+  @media (min-width: 700px) {
+    .honeycomb { --cols: 6; }
+    .honeycomb li:nth-child(7n+5) { grid-column: span 2; }
+    .honeycomb li:nth-child(11n+7) { grid-column: 2 / span 2; }
+  }
+  @media (min-width: 1000px) {
+    .honeycomb { --cols: 8; }
+    .honeycomb li:nth-child(11n+7) { grid-column: span 2; }
+    .honeycomb li:nth-child(15n+9) { grid-column: 2 / span 2; }
+  }
+
+  .bubble {
+    width: 100%;
+    min-width: 0;
+    padding: 0 3px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .disc {
+    width: clamp(64px, 18vw, 96px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(7, 33, 43, .5);
+    border: 1px solid rgba(243, 233, 210, .3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 10px 28px rgba(7, 33, 43, .4);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    transform: scale(var(--s, 1));
+    will-change: transform;
+  }
+  .disc svg { width: 44%; height: 44%; }
+  .disc .initials { font-weight: 800; font-size: 1.35rem; letter-spacing: -.02em; }
+  .cluster.contacts .disc { background: rgba(245, 184, 65, .92); color: var(--ink); border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .cluster.contacts .urgent .disc { background: rgba(255, 107, 74, .94); color: #fff; }
+  .cluster.documents .disc { background: rgba(243, 233, 210, .9); color: var(--ink); border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .bubble:active .disc { filter: brightness(1.15); }
+  .bubble .label {
+    max-width: 100%;
+    min-height: 2.35em;
+    font-size: .78rem;
+    overflow-wrap: anywhere;
+    font-weight: 650;
+    line-height: 1.17;
+    text-align: center;
+    text-shadow: 0 1px 10px rgba(7, 33, 43, .95), 0 0 2px rgba(7, 33, 43, .8);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  dialog.sheet {
+    width: 100%;
+    max-width: min(560px, 100%);
+    margin: auto auto 0;
+    border: 0;
+    border-radius: 28px 28px 0 0;
+    padding: 28px var(--pad) calc(24px + env(safe-area-inset-bottom));
+    background: rgba(7, 33, 43, .95);
+    color: var(--sand);
+  }
+  dialog.sheet::backdrop { background: rgba(7, 33, 43, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  dialog.sheet[open] { animation: sheet-up .32s cubic-bezier(.2, .7, .2, 1); }
+  @keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } }
+  @media (min-width: 700px) { dialog.sheet { margin: auto; border-radius: 28px; } }
+  .sheet h3 { margin: 0; font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+  .sheet .note { margin: 8px 0 0; color: var(--mist); }
+  .sheet .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 0; }
+  .sheet .action { padding: 14px 20px; font-size: 1.05rem; }
+  .sheet.urgent .action.action-primary { background: var(--flare); color: #fff; }
+  .sheet .sheet-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .sheet .sheet-foot button { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 11px 18px; font-weight: 600; cursor: pointer; }
+  .sheet .sheet-foot button[aria-pressed="true"] { background: var(--amber); color: var(--ink); border-color: transparent; }
+
   .shortcuts { margin: 5vh 0 0; }
   .shortcuts h2 { font-size: 1rem; font-weight: 700; margin: 0 0 10px; }
   .shortcuts ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
@@ -290,7 +408,7 @@
   @keyframes reveal { from { opacity: 0; transform: translateY(18px); } }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .reveal { animation: none; }
+    .reveal, dialog.sheet[open] { animation: none; }
   }
 </style>
 </head>
@@ -319,10 +437,13 @@
 
   <div class="bar">
     <div class="bar-inner">
-      <label class="search">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
-        <input id="search" type="search" placeholder="Search everything" aria-label="Search everything" autocomplete="off">
-      </label>
+      <div class="bar-row">
+        <label class="search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+          <input id="search" type="search" placeholder="Search everything" aria-label="Search everything" autocomplete="off">
+        </label>
+        <button type="button" class="view-toggle" id="view-toggle"></button>
+      </div>
       <nav class="jump" id="jump" aria-label="Sections"></nav>
     </div>
   </div>
@@ -337,10 +458,20 @@
   </main>
 
   <footer>
-    <span>Tap a star to keep an item in your shortcuts.</span>
+    <span>Keep the things you use most in your shortcuts.</span>
     <button type="button" id="relock">Lock this device</button>
   </footer>
 </div>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
+  <h3 id="sheet-title"></h3>
+  <p class="note" id="sheet-note"></p>
+  <div class="actions" id="sheet-actions"></div>
+  <div class="sheet-foot">
+    <button type="button" id="sheet-pin"></button>
+    <button type="button" id="sheet-close">Close</button>
+  </div>
+</dialog>
 
 <script>
 (() => {
@@ -349,6 +480,35 @@
   const $ = (id) => document.getElementById(id);
   const STORE_KEY = 'clear.unlock';
   const PINS_KEY = 'clear.pins';
+  const VIEW_KEY = 'clear.view';
+
+  // Pictures for the bubbles. An entry picks one with "icon"; without it the bubble shows initials.
+  const GLYPHS = {
+    shield: 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z',
+    medical: 'M9 4h6v5h5v6h-5v5H9v-5H4V9h5z',
+    flame: 'M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-8.5z',
+    wrench: 'M20 7a4.5 4.5 0 0 1-6 4.2L6.5 18.7a1.8 1.8 0 0 1-2.500-2.500L11.500 8.700A4.500 4.500 0 0 1 17 3l-2.500 2.500 1 2.500 2.500 1z',
+    building: 'M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M15 10h3a1 1 0 0 1 1 1v10M3 21h18M9 8h2M9 12h2M9 16h2',
+    car: 'M5 16v2M19 16v2M4 16h16v-4l-2-5H6l-2 5zM7.5 13h.01M16.5 13h.01',
+    drop: 'M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z',
+    basket: 'M4 10h16l-1.5 9h-13zM8 10l3-6M16 10l-3-6',
+    food: 'M7 3v7a2 2 0 0 0 4 0V3M9 12v9M17 3c-2 2-2 6 0 9v9',
+    scissors: 'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.5 7.5 20 19M8.5 16.5 20 5',
+    sparkle: 'M12 3l1.8 5.2L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800zM19 16v4M17 18h4',
+    wifi: 'M3 9a14 14 0 0 1 18 0M6 13a9 9 0 0 1 12 0M9.5 16.5a4 4 0 0 1 5 0M12 20h.01',
+    book: 'M5 4h13v14H7a2 2 0 0 0 0 4h11M5 4v16',
+    form: 'M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5',
+    pass: 'M4 6h16v12H4zM7 15c.5-1.500 3.500-1.500 4 0M9 11h.01M14 10h3M14 14h3',
+    list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
+    phone: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2',
+    pin: 'M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11zM12 12.500a2.500 2.500 0 1 0 0-5 2.500 2.500 0 0 0 0 5z',
+    heart: 'M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.500A4 4 0 0 1 19 10c0 5.500-7 10-7 10z',
+    cart: 'M3 4h3l2 11h10l2-8H7M9 20h.01M18 20h.01',
+    bolt: 'M13 3 5 13h6l-1 8 8-10h-6z',
+    home: 'M4 11l8-7 8 7v9H4zM10 20v-6h4v6',
+    plane: 'M3 13l18-8-6 16-3-7z',
+    calendar: 'M5 6h14v14H5zM5 10h14M9 4v4M15 4v4'
+  };
 
   const ICONS = {
     phone: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
@@ -414,6 +574,117 @@
 
   let pins = new Set(store.get(PINS_KEY) || []);
   let content = null;
+  let view = store.get(VIEW_KEY) === 'list' ? 'list' : 'bubbles';
+
+  const itemId = (section, item) => section.id + '|' + item.title;
+  function togglePin(id) {
+    pins.has(id) ? pins.delete(id) : pins.add(id);
+    store.set(PINS_KEY, [...pins]);
+    renderShortcuts();
+    return pins.has(id);
+  }
+
+  function glyph(item) {
+    const path = GLYPHS[item.icon];
+    if (!path) {
+      const words = item.title.split(/\s+/).filter((w) => /^[a-z0-9]/i.test(w));
+      return el('span', 'initials', words.slice(0, 2).map((w) => w[0].toUpperCase()).join(''));
+    }
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', path);
+    svg.append(p);
+    return svg;
+  }
+
+  /* ---------- Entry sheet ---------- */
+
+  let sheetPinId = null;
+  function pinLabel(on) {
+    const b = $('sheet-pin');
+    b.textContent = on ? 'In your shortcuts' : 'Add to shortcuts';
+    b.setAttribute('aria-pressed', String(on));
+  }
+  function openSheet(section, item) {
+    const sheet = $('sheet');
+    sheetPinId = itemId(section, item);
+    sheet.classList.toggle('urgent', !!item.urgent);
+    $('sheet-title').textContent = item.title;
+    $('sheet-note').textContent = item.note || '';
+    const links = itemActions(item);
+    $('sheet-actions').replaceChildren(...(links.length ? links : [el('span', 'pending', 'Details still to add')]));
+    pinLabel(pins.has(sheetPinId));
+    sheet.showModal();
+  }
+
+  /* ---------- Bubble view ---------- */
+
+  function drawBubbles(query) {
+    const q = query.trim().toLowerCase();
+    const sections = $('sections');
+    sections.replaceChildren();
+    let any = false;
+    for (const section of content.sections) {
+      const matches = section.items.filter((item) =>
+        !q || [item.title, item.note, item.phone, section.title].join(' ').toLowerCase().includes(q));
+      if (!matches.length) continue;
+      any = true;
+      const cluster = el('section', 'cluster ' + (section.kind || 'services'));
+      cluster.id = section.id;
+      cluster.append(el('h2', null, section.title));
+      if (section.blurb) cluster.append(el('p', 'blurb', section.blurb));
+      const comb = el('ul', 'honeycomb');
+      for (const item of matches) {
+        const b = el('button', 'bubble' + (item.urgent ? ' urgent' : ''));
+        b.type = 'button';
+        const disc = el('span', 'disc');
+        disc.append(glyph(item));
+        b.append(disc, el('span', 'label', item.title));
+        b.addEventListener('click', () => openSheet(section, item));
+        const li = el('li');
+        li.append(b);
+        comb.append(li);
+      }
+      cluster.append(comb);
+      sections.append(cluster);
+    }
+    $('empty').hidden = any;
+    swell();
+  }
+
+  // Bubbles are full size mid-screen and shrink toward the top and bottom edges.
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let swellQueued = false;
+  function swell() {
+    swellQueued = false;
+    if (view !== 'bubbles' || calm.matches) return;
+    const mid = window.innerHeight / 2;
+    const reach = window.innerHeight * 0.62;
+    for (const disc of document.querySelectorAll('.disc')) {
+      const box = disc.parentElement.getBoundingClientRect();
+      if (box.bottom < -80 || box.top > window.innerHeight + 80) continue;
+      const far = Math.min(1, Math.abs(box.top + box.height / 2 - mid) / reach);
+      disc.style.setProperty('--s', (1 - 0.42 * far * far).toFixed(3));
+    }
+  }
+  const queueSwell = () => { if (!swellQueued) { swellQueued = true; requestAnimationFrame(swell); } };
+  window.addEventListener('scroll', queueSwell, { passive: true });
+  window.addEventListener('resize', queueSwell);
+
+  function draw() {
+    const query = $('search').value;
+    $('view-toggle').textContent = view === 'bubbles' ? 'List' : 'Bubbles';
+    $('view-toggle').setAttribute('aria-label', view === 'bubbles' ? 'Show as a list' : 'Show as bubbles');
+    if (view === 'bubbles') drawBubbles(query);
+    else { render(); filter(query); }
+  }
 
   function renderShortcuts() {
     const list = $('shortcut-list');
@@ -435,20 +706,24 @@
     $('shortcuts').hidden = !list.children.length;
   }
 
-  function render() {
+  function renderFrame() {
     $('place').textContent = content.place || '';
     $('updated').textContent = content.updated ? 'Updated ' + content.updated : '';
-
     const jump = $('jump');
-    const sections = $('sections');
     jump.replaceChildren();
-    sections.replaceChildren();
-
     for (const section of content.sections) {
       const link = el('a', null, section.title);
       link.href = '#' + section.id;
       jump.append(link);
+    }
+    renderShortcuts();
+  }
 
+  function render() {
+    const sections = $('sections');
+    sections.replaceChildren();
+
+    for (const section of content.sections) {
       const panel = el('section', 'panel');
       panel.id = section.id;
       panel.append(el('h2', null, section.title));
@@ -469,12 +744,7 @@
         pin.innerHTML = ICONS.star;
         pin.setAttribute('aria-label', 'Keep ' + item.title + ' in your shortcuts');
         pin.setAttribute('aria-pressed', String(pins.has(id)));
-        pin.addEventListener('click', () => {
-          pins.has(id) ? pins.delete(id) : pins.add(id);
-          pin.setAttribute('aria-pressed', String(pins.has(id)));
-          store.set(PINS_KEY, [...pins]);
-          renderShortcuts();
-        });
+        pin.addEventListener('click', () => pin.setAttribute('aria-pressed', String(togglePin(id))));
 
         const actions = el('div', 'actions');
         const links = itemActions(item);
@@ -487,7 +757,6 @@
       panel.append(list);
       sections.append(panel);
     }
-    renderShortcuts();
   }
 
   function filter(query) {
@@ -510,7 +779,8 @@
 
   function showHub(data, animate) {
     content = data;
-    render();
+    renderFrame();
+    draw();
     $('lock').hidden = true;
     $('hub').hidden = false;
     if (animate) {
@@ -569,7 +839,15 @@
     });
   }
 
-  $('search').addEventListener('input', (event) => filter(event.target.value));
+  $('search').addEventListener('input', draw);
+  $('view-toggle').addEventListener('click', () => {
+    view = view === 'bubbles' ? 'list' : 'bubbles';
+    store.set(VIEW_KEY, view);
+    draw();
+  });
+  $('sheet-pin').addEventListener('click', () => pinLabel(togglePin(sheetPinId)));
+  $('sheet-close').addEventListener('click', () => $('sheet').close());
+  $('sheet').addEventListener('click', (event) => { if (event.target === $('sheet')) $('sheet').close(); });
   $('relock').addEventListener('click', () => {
     store.remove(STORE_KEY);
     location.reload();
