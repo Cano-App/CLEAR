@@ -127,18 +127,22 @@
   .lock .status { min-height: 1.5em; font-size: 1rem; max-width: 40ch; color: var(--sand); }
 
   /* ---------- Hub ---------- */
+  /* Short header: the bubbles start on the first screen. */
   .hero {
-    min-height: 100svh;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: var(--pad);
-    padding-bottom: clamp(28px, 7vh, 72px);
+    padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) 20px;
     max-width: var(--measure);
     margin: 0 auto;
   }
-  .hero .place { margin: 18px 0 0; font-size: 1.25rem; font-weight: 600; }
-  .hero .updated { margin: 2px 0 0; color: var(--mist); font-size: .95rem; }
+  .hero .wordmark { font-size: clamp(3.6rem, 18vw, 8rem); }
+  .hero .meaning {
+    margin: 14px 0 0;
+    font-size: clamp(1.05rem, 4.5vw, 1.6rem);
+    font-weight: 500;
+    line-height: 1.25;
+    text-shadow: 0 1px 18px rgba(7, 33, 43, .75);
+  }
+  .hero .meaning b { font-weight: 800; color: var(--amber); }
+  .hero .updated { margin: 6px 0 0; color: var(--sand); opacity: .8; font-size: .9rem; text-shadow: 0 1px 12px rgba(7, 33, 43, .8); }
 
   .bar {
     position: sticky;
@@ -432,7 +436,7 @@
 <div id="hub" hidden>
   <header class="hero">
     <h1 class="wordmark">CLEAR</h1>
-    <p class="place" id="place"></p>
+    <p class="meaning" id="meaning"></p>
     <p class="updated" id="updated"></p>
   </header>
 
@@ -716,7 +720,14 @@
   }
 
   function renderFrame() {
-    $('place').textContent = content.place || '';
+    // What the name stands for, with each initial picked out.
+    const meaning = $('meaning');
+    meaning.replaceChildren();
+    for (const word of (content.meaning || '').split(/\s+/).filter(Boolean)) {
+      if (/^[a-z]/i.test(word)) meaning.append(el('b', null, word[0]), word.slice(1) + ' ');
+      else meaning.append(word + ' ');
+    }
+    meaning.hidden = !content.meaning;
     $('updated').textContent = content.updated ? 'Updated ' + content.updated : '';
     const jump = $('jump');
     jump.replaceChildren();
