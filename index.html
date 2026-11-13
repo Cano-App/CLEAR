@@ -50,9 +50,18 @@
     height: 100lvh;
     z-index: -1;
     overflow: hidden;
+    background: var(--ink);
+  }
+  /* Stand-in sky, shown wherever a picture has not been added yet. */
+  .backdrop::before {
+    content: "";
+    position: absolute;
+    inset: 0;
     background:
       radial-gradient(120% 60% at 78% 38%, rgba(245, 184, 65, .85) 0%, rgba(255, 107, 74, .5) 28%, transparent 60%),
       linear-gradient(180deg, #123f55 0%, #1f6f7d 30%, #e0915a 52%, #0c3a46 54%, #07212b 100%);
+    filter: hue-rotate(var(--hue, 0deg));
+    transition: filter .8s ease;
   }
   .backdrop img {
     position: absolute;
@@ -60,7 +69,10 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    opacity: 0;
+    transition: opacity .7s ease;
   }
+  .backdrop img.on { opacity: 1; }
   .backdrop::after {
     content: "";
     position: absolute;
@@ -325,9 +337,24 @@
   }
   .disc svg { width: 44%; height: 44%; }
   .disc .initials { font-weight: 800; font-size: 1.35rem; letter-spacing: -.02em; }
-  .cluster.contacts .disc { background: rgba(245, 184, 65, .92); color: var(--ink); border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
-  .cluster.contacts .urgent .disc { background: rgba(255, 107, 74, .94); color: #fff; }
-  .cluster.documents .disc { background: rgba(243, 233, 210, .9); color: var(--ink); border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .k-contacts .disc { background: rgba(245, 184, 65, .92); color: var(--ink); border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .k-contacts.urgent .disc { background: rgba(255, 107, 74, .94); color: #fff; }
+  .k-documents .disc { background: rgba(243, 233, 210, .9); color: var(--ink); border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+  /* Home page: one large bubble per category. */
+  .categories {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 22px 8px;
+  }
+  .categories li { width: clamp(104px, 30%, 190px); display: flex; justify-content: center; }
+  .categories .disc { width: clamp(88px, 25vw, 150px); }
+  .categories .label { font-size: .95rem; font-weight: 700; }
+  .jump a[aria-current="page"] { background: var(--amber); color: var(--ink); border-color: transparent; }
   .bubble:active .disc { filter: brightness(1.15); }
   .bubble .label {
     max-width: 100%;
@@ -413,6 +440,7 @@
   @keyframes reveal { from { opacity: 0; transform: translateY(18px); } }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
+    .backdrop::before, .backdrop img { transition: none; }
     .reveal, dialog.sheet[open] { animation: none; }
   }
 </style>
@@ -420,7 +448,7 @@
 <body>
 
 <div class="backdrop" aria-hidden="true">
-  <img src="assets/background.jpg" alt="" onerror="this.remove()">
+  <img class="on" data-key="home" src="assets/home.jpg" alt="" onerror="this.remove()">
 </div>
 
 <section class="lock" id="lock">
@@ -434,7 +462,7 @@
 </section>
 
 <div id="hub" hidden>
-  <header class="hero">
+  <header class="hero" id="hero">
     <h1 class="wordmark">CLEAR</h1>
     <p class="meaning" id="meaning"></p>
     <p class="updated" id="updated"></p>
@@ -629,27 +657,65 @@
     sheet.showModal();
   }
 
-  /* ---------- Bubble view ---------- */
+  /* ---------- Pages ---------- */
 
-  function drawBubbles(query) {
-    const q = query.trim().toLowerCase();
-    const sections = $('sections');
-    sections.replaceChildren();
-    let any = false;
+  // The home page shows the categories. Each category is its own page: #/contacts, #/services…
+  let route = '';
+  function readRoute() {
+    const id = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+    route = content.sections.some((s) => s.id === id) ? id : '';
+  }
+
+  const hit = (section, item, q) =>
+    [item.title, item.note, item.phone, section.title].join(' ').toLowerCase().includes(q);
+
+  // What to show: null means the category bubbles; otherwise groups of entries.
+  function scope(q) {
+    if (q) {
+      return content.sections
+        .map((section) => ({ section, items: section.items.filter((item) => hit(section, item, q)) }))
+        .filter((group) => group.items.length);
+    }
+    if (route) {
+      const section = content.sections.find((s) => s.id === route);
+      return [{ section, items: section.items }];
+    }
+    return null;
+  }
+
+  function bubble(tag, cls, icon, label) {
+    const b = el(tag, 'bubble ' + cls);
+    const disc = el('span', 'disc');
+    disc.append(glyph(icon));
+    b.append(disc, el('span', 'label', label));
+    return b;
+  }
+
+  function drawCategories() {
+    const wrap = el('section', 'cluster');
+    const row = el('ul', 'categories');
     for (const section of content.sections) {
-      const matches = section.items.filter((item) =>
-        !q || [item.title, item.note, item.phone, section.title].join(' ').toLowerCase().includes(q));
-      if (!matches.length) continue;
-      any = true;
-      const cluster = el('section', 'cluster ' + (section.kind || 'services'));
-      cluster.id = section.id;
+      const b = bubble('a', 'k-' + (section.kind || 'services'), { icon: section.icon, title: section.title }, section.title);
+      b.href = '#/' + section.id;
+      const li = el('li');
+      li.append(b);
+      row.append(li);
+    }
+    wrap.append(row);
+    $('sections').append(wrap);
+  }
+
+  function drawBubbleGroups(groups) {
+    for (const { section, items } of groups) {
+      const cluster = el('section', 'cluster');
       cluster.append(el('h2', null, section.title));
       if (section.blurb) cluster.append(el('p', 'blurb', section.blurb));
       const comb = el('ul', 'honeycomb');
-      for (const item of matches) {
+      for (const item of items) {
         // An entry that is only a link opens straight away; anything else shows its card.
         const direct = webUrl(item.url) && !dial(item.phone) && !dial(item.whatsapp);
-        const b = el(direct ? 'a' : 'button', 'bubble' + (item.urgent ? ' urgent' : ''));
+        const cls = 'k-' + (section.kind || 'services') + (item.urgent ? ' urgent' : '');
+        const b = bubble(direct ? 'a' : 'button', cls, item, item.title);
         if (direct) {
           b.href = webUrl(item.url);
           b.target = '_blank';
@@ -658,102 +724,25 @@
           b.type = 'button';
           b.addEventListener('click', () => openSheet(section, item));
         }
-        const disc = el('span', 'disc');
-        disc.append(glyph(item));
-        b.append(disc, el('span', 'label', item.title));
         const li = el('li');
         li.append(b);
         comb.append(li);
       }
       cluster.append(comb);
-      sections.append(cluster);
-    }
-    $('empty').hidden = any;
-    swell();
-  }
-
-  // Bubbles are full size mid-screen and shrink toward the top and bottom edges.
-  const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let swellQueued = false;
-  function swell() {
-    swellQueued = false;
-    if (view !== 'bubbles' || calm.matches) return;
-    const mid = window.innerHeight / 2;
-    const reach = window.innerHeight * 0.62;
-    for (const disc of document.querySelectorAll('.disc')) {
-      const box = disc.parentElement.getBoundingClientRect();
-      if (box.bottom < -80 || box.top > window.innerHeight + 80) continue;
-      const far = Math.min(1, Math.abs(box.top + box.height / 2 - mid) / reach);
-      disc.style.setProperty('--s', (1 - 0.42 * far * far).toFixed(3));
+      $('sections').append(cluster);
     }
   }
-  const queueSwell = () => { if (!swellQueued) { swellQueued = true; requestAnimationFrame(swell); } };
-  window.addEventListener('scroll', queueSwell, { passive: true });
-  window.addEventListener('resize', queueSwell);
 
-  function draw() {
-    const query = $('search').value;
-    $('view-toggle').textContent = view === 'bubbles' ? 'List' : 'Bubbles';
-    $('view-toggle').setAttribute('aria-label', view === 'bubbles' ? 'Show as a list' : 'Show as bubbles');
-    if (view === 'bubbles') drawBubbles(query);
-    else { render(); filter(query); }
-  }
-
-  function renderShortcuts() {
-    const list = $('shortcut-list');
-    list.replaceChildren();
-    for (const section of content.sections) {
-      for (const item of section.items) {
-        const id = section.id + '|' + item.title;
-        if (!pins.has(id)) continue;
-        const first = itemActions(item)[0];
-        const a = el('a');
-        a.href = first ? first.href : '#' + section.id;
-        if (first && first.target) { a.target = first.target; a.rel = first.rel; }
-        a.textContent = item.title;
-        const li = el('li');
-        li.append(a);
-        list.append(li);
-      }
-    }
-    $('shortcuts').hidden = !list.children.length;
-  }
-
-  function renderFrame() {
-    // What the name stands for, with each initial picked out.
-    const meaning = $('meaning');
-    meaning.replaceChildren();
-    for (const word of (content.meaning || '').split(/\s+/).filter(Boolean)) {
-      if (/^[a-z]/i.test(word)) meaning.append(el('b', null, word[0]), word.slice(1) + ' ');
-      else meaning.append(word + ' ');
-    }
-    meaning.hidden = !content.meaning;
-    $('updated').textContent = content.updated ? 'Updated ' + content.updated : '';
-    const jump = $('jump');
-    jump.replaceChildren();
-    for (const section of content.sections) {
-      const link = el('a', null, section.title);
-      link.href = '#' + section.id;
-      jump.append(link);
-    }
-    renderShortcuts();
-  }
-
-  function render() {
-    const sections = $('sections');
-    sections.replaceChildren();
-
-    for (const section of content.sections) {
+  function drawListGroups(groups) {
+    for (const { section, items } of groups) {
       const panel = el('section', 'panel');
-      panel.id = section.id;
       panel.append(el('h2', null, section.title));
       if (section.blurb) panel.append(el('p', 'blurb', section.blurb));
 
       const list = el('ul', 'items ' + (section.kind || 'services'));
-      for (const item of section.items) {
-        const id = section.id + '|' + item.title;
+      for (const item of items) {
+        const id = itemId(section, item);
         const li = el('li', 'item' + (item.urgent ? ' urgent' : ''));
-        li.dataset.search = [item.title, item.note, item.phone, section.title].join(' ').toLowerCase();
 
         const text = el('div');
         text.append(el('h3', null, item.title));
@@ -775,31 +764,123 @@
         list.append(li);
       }
       panel.append(list);
-      sections.append(panel);
+      $('sections').append(panel);
     }
   }
 
-  function filter(query) {
-    const q = query.trim().toLowerCase();
-    let any = false;
-    for (const panel of document.querySelectorAll('.panel')) {
-      let shown = 0;
-      for (const li of panel.querySelectorAll('.item')) {
-        const match = !q || li.dataset.search.includes(q);
-        li.hidden = !match;
-        if (match) shown++;
-      }
-      panel.hidden = !shown;
-      any = any || shown > 0;
+  // Bubbles are full size mid-screen and shrink toward the top and bottom edges.
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let swellQueued = false;
+  function swell() {
+    swellQueued = false;
+    if (calm.matches) return;
+    const mid = window.innerHeight / 2;
+    const reach = window.innerHeight * 0.62;
+    for (const disc of document.querySelectorAll('.honeycomb .disc')) {
+      const box = disc.parentElement.getBoundingClientRect();
+      if (box.bottom < -80 || box.top > window.innerHeight + 80) continue;
+      const far = Math.min(1, Math.abs(box.top + box.height / 2 - mid) / reach);
+      disc.style.setProperty('--s', (1 - 0.42 * far * far).toFixed(3));
     }
-    $('empty').hidden = any;
+  }
+  const queueSwell = () => { if (!swellQueued) { swellQueued = true; requestAnimationFrame(swell); } };
+  window.addEventListener('scroll', queueSwell, { passive: true });
+  window.addEventListener('resize', queueSwell);
+
+  /* ---------- Pictures ---------- */
+
+  // assets/home.jpg sits behind the home page; assets/<category id>.jpg behind each category.
+  // A category without its own picture keeps the home one.
+  const backdrop = document.querySelector('.backdrop');
+  function loadPictures() {
+    for (const section of content.sections) {
+      if (!/^[a-z0-9-]+$/.test(section.id)) continue;
+      const img = new Image();
+      img.alt = '';
+      img.dataset.key = section.id;
+      img.addEventListener('error', () => { img.remove(); showPicture(); });
+      img.addEventListener('load', showPicture);
+      img.src = 'assets/' + section.id + '.jpg';
+      backdrop.append(img);
+    }
+  }
+  function showPicture() {
+    const own = route && [...backdrop.querySelectorAll('img')].some((i) => i.dataset.key === route && i.complete && i.naturalWidth);
+    const key = own ? route : 'home';
+    for (const img of backdrop.querySelectorAll('img')) img.classList.toggle('on', img.dataset.key === key);
+    const index = content.sections.findIndex((s) => s.id === route);
+    backdrop.style.setProperty('--hue', (own || index < 0 ? 0 : (index + 1) * 62) + 'deg');
+  }
+
+  function draw() {
+    const q = $('search').value.trim().toLowerCase();
+    const groups = scope(q);
+    $('sections').replaceChildren();
+    $('hero').hidden = route !== '';
+    $('view-toggle').hidden = !groups;
+    $('view-toggle').textContent = view === 'bubbles' ? 'List' : 'Bubbles';
+    $('view-toggle').setAttribute('aria-label', view === 'bubbles' ? 'Show as a list' : 'Show as bubbles');
+    if (!groups) drawCategories();
+    else if (view === 'bubbles') drawBubbleGroups(groups);
+    else drawListGroups(groups);
+    $('empty').hidden = !(groups && !groups.length);
+    for (const link of $('jump').children) {
+      if (link.dataset.route === route) {
+        link.setAttribute('aria-current', 'page');
+        $('jump').scrollLeft = link.offsetLeft - $('jump').offsetLeft - 60;
+      } else link.removeAttribute('aria-current');
+    }
+    renderShortcuts();
+    showPicture();
+    swell();
+  }
+
+  function renderShortcuts() {
+    const list = $('shortcut-list');
+    list.replaceChildren();
+    for (const section of content.sections) {
+      for (const item of section.items) {
+        if (!pins.has(itemId(section, item))) continue;
+        const first = itemActions(item)[0];
+        const a = el('a');
+        a.href = first ? first.href : '#/' + section.id;
+        if (first && first.target) { a.target = first.target; a.rel = first.rel; }
+        a.textContent = item.title;
+        const li = el('li');
+        li.append(a);
+        list.append(li);
+      }
+    }
+    $('shortcuts').hidden = !list.children.length || route !== '' || $('search').value.trim() !== '';
+  }
+
+  function renderFrame() {
+    // What the name stands for, with each initial picked out.
+    const meaning = $('meaning');
+    meaning.replaceChildren();
+    for (const word of (content.meaning || '').split(/\s+/).filter(Boolean)) {
+      if (/^[a-z]/i.test(word)) meaning.append(el('b', null, word[0]), word.slice(1) + ' ');
+      else meaning.append(word + ' ');
+    }
+    meaning.hidden = !content.meaning;
+    $('updated').textContent = content.updated ? 'Updated ' + content.updated : '';
+    const jump = $('jump');
+    jump.replaceChildren();
+    for (const [id, title] of [['', 'Home'], ...content.sections.map((s) => [s.id, s.title])]) {
+      const link = el('a', null, title);
+      link.href = '#/' + id;
+      link.dataset.route = id;
+      jump.append(link);
+    }
   }
 
   /* ---------- Lock and unlock ---------- */
 
   function showHub(data, animate) {
     content = data;
+    readRoute();
     renderFrame();
+    loadPictures();
     draw();
     $('lock').hidden = true;
     $('hub').hidden = false;
@@ -808,6 +889,15 @@
       window.scrollTo(0, 0);
     }
   }
+
+  window.addEventListener('hashchange', () => {
+    if (!content) return;
+    readRoute();
+    $('search').value = '';
+    if ($('sheet').open) $('sheet').close();
+    draw();
+    window.scrollTo(0, 0);
+  });
 
   async function start() {
     const status = $('lock-status');
