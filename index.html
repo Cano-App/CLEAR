@@ -303,6 +303,7 @@
     justify-items: center;
     gap: 7px;
     -webkit-tap-highlight-color: transparent;
+    text-decoration: none;
   }
   .disc {
     width: clamp(64px, 18vw, 96px);
@@ -642,12 +643,20 @@
       if (section.blurb) cluster.append(el('p', 'blurb', section.blurb));
       const comb = el('ul', 'honeycomb');
       for (const item of matches) {
-        const b = el('button', 'bubble' + (item.urgent ? ' urgent' : ''));
-        b.type = 'button';
+        // An entry that is only a link opens straight away; anything else shows its card.
+        const direct = webUrl(item.url) && !dial(item.phone) && !dial(item.whatsapp);
+        const b = el(direct ? 'a' : 'button', 'bubble' + (item.urgent ? ' urgent' : ''));
+        if (direct) {
+          b.href = webUrl(item.url);
+          b.target = '_blank';
+          b.rel = 'noopener';
+        } else {
+          b.type = 'button';
+          b.addEventListener('click', () => openSheet(section, item));
+        }
         const disc = el('span', 'disc');
         disc.append(glyph(item));
         b.append(disc, el('span', 'label', item.title));
-        b.addEventListener('click', () => openSheet(section, item));
         const li = el('li');
         li.append(b);
         comb.append(li);
