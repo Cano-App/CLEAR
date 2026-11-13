@@ -189,7 +189,8 @@
     font-weight: 600;
   }
 
-  main { max-width: var(--measure); margin: 0 auto; padding: 0 var(--pad); }
+  main { max-width: var(--measure); min-height: 62svh; margin: 0 auto; padding: 0 var(--pad); }
+  footer span { padding: 9px 16px; border-radius: 999px; background: var(--glass-strong); }
 
   .panel {
     margin-block: 13vh;
@@ -710,6 +711,7 @@
       const cluster = el('section', 'cluster');
       cluster.append(el('h2', null, section.title));
       if (section.blurb) cluster.append(el('p', 'blurb', section.blurb));
+      if (!items.length) cluster.append(el('p', 'blurb', 'Nothing has been added here yet.'));
       const comb = el('ul', 'honeycomb');
       for (const item of items) {
         // An entry that is only a link opens straight away; anything else shows its card.
@@ -739,6 +741,7 @@
       panel.append(el('h2', null, section.title));
       if (section.blurb) panel.append(el('p', 'blurb', section.blurb));
 
+      if (!items.length) panel.append(el('p', 'blurb', 'Nothing has been added here yet.'));
       const list = el('ul', 'items ' + (section.kind || 'services'));
       for (const item of items) {
         const id = itemId(section, item);
